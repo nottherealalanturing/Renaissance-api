@@ -12,6 +12,9 @@ import {
   TransactionType,
   TransactionStatus,
 } from '../transactions/entities/transaction.entity';
+import { StakingContractService } from './services/staking-contract.service';
+import { RewardCalculatorService } from './services/reward-calculator.service';
+import { RewardDistributorService } from './services/reward-distributor.service';
 
 export interface StakeResult {
   success: boolean;
@@ -39,13 +42,26 @@ export class StakingService {
   };
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(Transaction)
-    private readonly transactionRepository: Repository<Transaction>,
-    private readonly dataSource: DataSource,
+    private readonly contract: StakingContractService,
+    private readonly calculator: RewardCalculatorService,
+    private readonly distributor: RewardDistributorService,
   ) {}
 
+
+  async getUserRewards(userAddress: string) {
+    const stake = await this.contract.getUserStake(userAddress);
+    const rate = await this.contract.getRewardRate();
+
+    return this.calculator.calculateReward(
+      Number(stake.amount),
+      Date.now() - Number(stake.timestamp),
+      Number(rate),
+    );
+  }
+
+  async claim(userAddress: string) {
+    return this.distributor.distribute(userAddress);
+  }
   /**
    * Stake tokens for rewards
    * Uses transaction to ensure atomicity between wallet deduction and staking record creation
