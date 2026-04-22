@@ -85,15 +85,15 @@ export class BetsService {
         );
       }
 
-// Check if user already has a bet on this match
+      // Check if user already has a bet on this match
       const betCount = await this.betRepository.count({
         where: { userId, match: { id: createBetDto.matchId } },
       });
 
       const MAX_BETS_PER_MATCH = 1;
       if (betCount >= MAX_BETS_PER_MATCH) {
-  throw new BadRequestException('Bet limit reached for this match');
-}
+        throw new BadRequestException('Bet limit reached for this match');
+      }
 
       // Resolve free bet voucher if provided. Vouchers: non-withdrawable, betting only, auto-consumed on use.
       let useVoucher = false;
@@ -122,16 +122,10 @@ export class BetsService {
             userId,
             Number(createBetDto.stakeAmount),
             TransactionSource.BET,
-            uuidv4(),
-            {
-              reason: 'BET_PLACEMENT',
-              matchId: createBetDto.matchId,
-              predictedOutcome: createBetDto.predictedOutcome,
-            },
           );
         } catch (error) {
           throw new BadRequestException(
-            error.message || 'Failed to deduct stake amount from wallet',
+            error || 'Failed to deduct stake amount from wallet',
           );
         }
       }
@@ -384,11 +378,15 @@ export class BetsService {
     }
 
     if (match.status !== MatchStatus.FINISHED) {
-      throw new BadRequestException('Cannot settle bets: Match is not finished');
+      throw new BadRequestException(
+        'Cannot settle bets: Match is not finished',
+      );
     }
 
     if (!match.outcome) {
-      throw new BadRequestException('Cannot settle bets: Match outcome not set');
+      throw new BadRequestException(
+        'Cannot settle bets: Match outcome not set',
+      );
     }
 
     const batchSize = Math.max(1, Math.min(options.batchSize ?? 200, 500));
@@ -464,16 +462,6 @@ export class BetsService {
           bet.userId,
           Number(bet.stakeAmount),
           TransactionSource.BET,
-          uuidv4(),
-          {
-            reason: 'BET_CANCELLATION',
-            betId: bet.id,
-            matchId: bet.matchId,
-            stakeAmount: Number(bet.stakeAmount),
-            cancellationReason: isAdmin ? 'admin_cancelled' : 'user_cancelled',
-            isFreeBet,
-            isVoucherWithdrawable,
-          },
         );
       }
 
@@ -624,7 +612,6 @@ export class BetsService {
                   isFreeBet,
                   isVoucherWithdrawable,
                 },
-                !isFreeBet || isVoucherWithdrawable,
               );
 
             if (!balanceResult.success) {

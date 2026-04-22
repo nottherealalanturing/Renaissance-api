@@ -1,8 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { WalletConnection } from '../entities/wallet-connection.entity';
-import { BalanceTransaction, TransactionType, TransactionSource } from '../entities/balance-transaction.entity';
+import {
+  BalanceTransaction,
+  TransactionType,
+  TransactionSource,
+} from '../entities/balance-transaction.entity';
 
 @Injectable()
 export class WalletService {
@@ -13,7 +17,9 @@ export class WalletService {
     private balanceTxRepo: Repository<BalanceTransaction>,
   ) {}
 
-  async getBalance(userId: string): Promise<{ available: number; locked: number }> {
+  async getBalance(
+    userId: string,
+  ): Promise<{ available: number; locked: number }> {
     const result = await this.balanceTxRepo.find({ where: { userId } });
     const available = result
       .filter((r) => r.type === TransactionType.CREDIT)
@@ -46,15 +52,16 @@ export class WalletService {
     userId: string,
     amount: number,
     type: string,
-    queryRunner?: any,
+    queryRunner: any,
     referenceId?: string,
-    metadata?: any
+    metadata?: any,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       await this.balanceTxRepo.save({
         userId,
         amount,
-        type: type === 'credit' ? TransactionType.CREDIT : TransactionType.DEBIT,
+        type:
+          type === 'credit' ? TransactionType.CREDIT : TransactionType.DEBIT,
         source: type as TransactionSource,
         referenceId,
       });
