@@ -2,6 +2,7 @@ import {
   Column,
   Entity,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
@@ -59,9 +60,7 @@ export class Comment extends BaseEntity {
   @JoinColumn({ name: 'parent_id' })
   parent: Comment;
 
-  @ManyToOne(() => Comment, (comment) => comment.children, {
-    nullable: true,
-  })
+  @OneToMany(() => Comment, (comment) => comment.parent)
   replies: Comment[];
 
   @ManyToOne(() => User, (user) => user.comments, {
